@@ -68,6 +68,10 @@
             </div>
 
             <div id="game-controls" class="flex space-x-4 w-full sm:w-auto justify-end">
+                <button id="show-key-btn"
+                    class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full transition duration-150 text-xl w-full sm:w-auto shadow-lg hover:shadow-xl disabled:opacity-50 hidden">
+                    👁️ Ver Clave Secreta
+                </button>
                 <button id="pass-turn-btn"
                     class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-6 rounded-full transition duration-150 text-xl w-full sm:w-auto shadow-lg hover:shadow-xl disabled:opacity-50 hidden">
                     Pasar Turno
@@ -95,11 +99,8 @@
         </div>
     </main>
 
-    <footer class="mt-8 text-gray-500 text-sm">
-        <p>Añade tu propia lógica JavaScript para manejar las pistas y el flujo del juego.</p>
-    </footer>
 
-    <script>
+    <script type="module">
         // Importar las palabras desde el archivo externo
         import { PALABRAS_SECRETAS } from './palabras.js';
 
@@ -107,8 +108,33 @@
             ROJO: 'red',
             AZUL: 'blue',
             NEUTRAL: 'neutral',
-            ASESINO: 'assassin'
+            ASESINO: 'assassin',
+            // Mapeo de tipos a emojis para la consola/alerta
+            MAPEO_EMOJI: {
+                'red': '🔴',
+                'blue': '🔵',
+                'neutral': '🟡',
+                'assassin': '⚫'
+            },
+            // Mapeo de tipos a las iniciales solicitadas para la codificación
+            MAPEO_CODIGO: {
+                'red': 'R',
+                'blue': 'B',
+                'neutral': 'N',
+                'assassin': 'A'
+            },
+            // Mapeo inverso de iniciales a tipos
+            MAPEO_INVERSO: {
+                'R': 'red',
+                'B': 'blue',
+                'N': 'neutral',
+                'A': 'assassin'
+            }
         };
+
+        // Constante para la clave de almacenamiento
+        const USADAS_STORAGE_KEY = 'juegoDeEspias_palabrasUsadas';
+        const PALABRAS_MAPA = new Map(PALABRAS_SECRETAS.map(p => [p.id, p.palabra]));
 
         // --- VARIABLES DE ESTADO DEL JUEGO ---
         let tableroLogico = [];
@@ -119,20 +145,115 @@
         // -------------------------------------
 
         /**
+         * Actualiza los contadores de agentes y el turno inicial basándose en el tablero decodificado.
+         * @param {Array} tablero - El tablero lógico a analizar.
+         */
+        function actualizarContadoresDeTablero(tablero) {
+            let rojosTotales = 0;
+            let azulesTotales = 0;
+
+            // Contar agentes totales y agentes restantes (los que NO están revelados)
+            tablero.forEach(card => {
+                if (card.type === TIPOS_CARTA.ROJO) {
+                    rojosTotales++;
+                    if (card.revealed) agentesRojosRestantes--; // Si está revelada, resta del contador
+                } else if (card.type === TIPOS_CARTA.AZUL) {
+                    azulesTotales++;
+                    if (card.revealed) agentesAzulesRestantes--; // Si está revelada, resta del contador
+                }
+            });
+
+            // Resetear y recalcular los contadores de juego
+            agentesRojosRestantes = tablero.filter(c => c.type === TIPOS_CARTA.ROJO && !c.revealed).length;
+            agentesAzulesRestantes = tablero.filter(c => c.type === TIPOS_CARTA.AZUL && !c.revealed).length;
+
+            // Determinar el turno inicial (el que tenía 9 agentes al inicio)
+            // Esto es más complejo, un estado de partida ideal también debería guardar el 'turnoActual'.
+            // Por simplicidad, asumiremos que si hay más cartas azules en total (9) que rojas (8),
+            // el turno inicial fue azul, y viceversa.
+            // **NOTA:** Para reanudar el estado exacto del turno, la codificación debería guardar también 'turnoActual'.
+            const agentesRojosIniciales = tablero.filter(c => c.type === TIPOS_CARTA.ROJO).length;
+            const agentesAzulesIniciales = tablero.filter(c => c.type === TIPOS_CARTA.AZUL).length;
+
+            turnoActual = (agentesAzulesIniciales > agentesRojosIniciales) ? TIPOS_CARTA.AZUL : TIPOS_CARTA.ROJO;
+
+            juegoTerminado = false; // Asumimos que no está terminado a menos que una carta asesina esté revelada.
+            if (tablero.find(c => c.type === TIPOS_CARTA.ASESINO && c.revealed)) {
+                juegoTerminado = true;
+            }
+
+            // Verificar si algún equipo ganó por conteo de agentes
+            if (agentesAzulesRestantes === 0 || agentesRojosRestantes === 0) {
+                juegoTerminado = true;
+            }
+
+            ocultarBotonesInicio();
+            document.getElementById('pass-turn-btn').disabled = juegoTerminado;
+            renderizarTablero(); // Redibuja el tablero, aplicando estilos a las cartas reveladas
+            actualizarPuntuacion();
+            actualizarIndicadorTurno();
+            mostrarClaveEnConsola();
+        }
+
+        // =========================================================
+        // RESTO DE FUNCIONES (Solo se muestra 'inicializarJuego' y 'DOMContentLoaded' con demos)
+        // =========================================================
+
+        function cargarIdsUsados() {
+            const data = localStorage.getItem(USADAS_STORAGE_KEY);
+            if (data) {
+                const lista = JSON.parse(data);
+                const ids = lista.map(item => item.id);
+                return new Set(ids);
+            }
+            return new Set();
+        }
+
+        function guardarNuevosIds(nuevosIds) {
+            const idsAnteriores = localStorage.getItem(USADAS_STORAGE_KEY);
+            let listaCompleta = idsAnteriores ? JSON.parse(idsAnteriores) : [];
+
+            const fechaActual = new Date().toISOString().slice(0, 10);
+
+            const nuevosItems = nuevosIds.map(id => ({
+                id: id,
+                fecha: fechaActual
+            }));
+
+            const mapaIds = new Map();
+
+            listaCompleta.forEach(item => mapaIds.set(item.id, item));
+            nuevosItems.forEach(item => mapaIds.set(item.id, item));
+
+            localStorage.setItem(USADAS_STORAGE_KEY, JSON.stringify(Array.from(mapaIds.values())));
+        }
+
+
+        /**
          * Función que encapsula toda la lógica para empezar una partida nueva.
-         * @param {string} startingTeam - El color del equipo que empieza (TIPOS_CARTA.AZUL o TIPOS_CARTA.ROJO).
          */
         function inicializarJuego(startingTeam) {
-            console.log(`Iniciando nueva partida. Empieza: ${startingTeam.toUpperCase()}`);
+            // ... (Lógica de selección de palabras, tipos y contadores) ...
 
-            // 1. Resetear variables de estado
             juegoTerminado = false;
             turnoActual = startingTeam;
 
             const firstTeam = startingTeam;
             const secondTeam = (firstTeam === TIPOS_CARTA.AZUL) ? TIPOS_CARTA.ROJO : TIPOS_CARTA.AZUL;
 
-            // 2. Distribución de cartas: El equipo que empieza tiene 9, el otro 8.
+            const idsUsados = cargarIdsUsados();
+            let palabrasCandidatas = PALABRAS_SECRETAS.filter(item => !idsUsados.has(item.id));
+
+            if (palabrasCandidatas.length < 25) {
+                console.warn("¡Pocas palabras no usadas! Reiniciando la lista completa.");
+                localStorage.removeItem(USADAS_STORAGE_KEY);
+                palabrasCandidatas = PALABRAS_SECRETAS;
+            }
+
+            const palabrasMezcladas = shuffleArray(palabrasCandidatas).slice(0, 25);
+            const idsPartidaActual = palabrasMezcladas.map(item => item.id);
+            guardarNuevosIds(idsPartidaActual);
+
             const tipos = [
                 ...Array(9).fill(firstTeam),
                 ...Array(8).fill(secondTeam),
@@ -140,27 +261,61 @@
                 TIPOS_CARTA.ASESINO
             ];
 
-            let palabrasMezcladas = [...PALABRAS_EJEMPLO];
-            let tiposMezclados = shuffleArray(tipos);
+            const tiposMezclados = shuffleArray(tipos);
 
-            tableroLogico = palabrasMezcladas.map((palabra, index) => ({
-                word: palabra,
+            tableroLogico = palabrasMezcladas.map((item, index) => ({
+                id: item.id,
+                word: item.palabra,
                 type: tiposMezclados[index],
                 revealed: false
             }));
 
-            // 3. Establecer contadores y actualizar UI
             agentesAzulesRestantes = (firstTeam === TIPOS_CARTA.AZUL) ? 9 : 8;
             agentesRojosRestantes = (firstTeam === TIPOS_CARTA.ROJO) ? 9 : 8;
 
             ocultarBotonesInicio();
-
-            // CORRECCIÓN CLAVE: Asegurar que el botón de pasar turno esté habilitado.
             document.getElementById('pass-turn-btn').disabled = false;
 
             renderizarTablero();
             actualizarPuntuacion();
             actualizarIndicadorTurno();
+
+            // Llama a la función de consola y guarda el estado codificado en la consola.
+            mostrarClaveEnConsola();
+            // console.log("Cadena Codificada del Tablero:", codificarTablero()); // DESCOMENTAR PARA VER LA CADENA COMPLETA
+        }
+
+        // ... (Resto de funciones: mostrarClaveEnConsola, mostrarClaveEnAlerta, mostrarBotonesInicio, etc.) ...
+        function mostrarClaveEnConsola() {
+            if (!tableroLogico || tableroLogico.length !== 25) return;
+
+            console.log("\n--- CLAVE SECRETA (PARA EL LÍDER DE ESPÍAS) ---");
+            console.log("-----------------------------------------------");
+
+            let claveConsola = "";
+            for (let i = 0; i < 25; i++) {
+                claveConsola += TIPOS_CARTA.MAPEO_EMOJI[tableroLogico[i].type];
+                if ((i + 1) % 5 === 0) {
+                    claveConsola += "\n";
+                }
+            }
+
+            console.log(claveConsola);
+            console.log("-----------------------------------------------\n");
+        }
+
+        function mostrarClaveEnAlerta() {
+            if (!tableroLogico || tableroLogico.length !== 25) return;
+
+            let claveAlerta = "CLAVE SECRETA (LÍDER DE ESPÍAS):\n\n";
+            for (let i = 0; i < 25; i++) {
+                claveAlerta += TIPOS_CARTA.MAPEO_EMOJI[tableroLogico[i].type];
+                if ((i + 1) % 5 === 0) {
+                    claveAlerta += "\n";
+                }
+            }
+
+            alert(claveAlerta);
         }
 
         /**
@@ -169,11 +324,10 @@
         function mostrarBotonesInicio() {
             document.getElementById('start-buttons').classList.remove('hidden');
             document.getElementById('pass-turn-btn').classList.add('hidden');
+            document.getElementById('show-key-btn').classList.add('hidden');
 
-            // Mostrar un mensaje en el tablero vacío
             document.getElementById('game-board').innerHTML = '<div class="text-center text-gray-400 text-3xl p-10 col-span-5">Selecciona el equipo que empieza para comenzar una nueva partida.</div>';
 
-            // Resetear indicadores de juego
             document.getElementById('current-turn').innerHTML = 'Esperando inicio...';
             document.querySelector('#blue-score span').textContent = '-';
             document.querySelector('#red-score span').textContent = '-';
@@ -185,6 +339,7 @@
         function ocultarBotonesInicio() {
             document.getElementById('start-buttons').classList.add('hidden');
             document.getElementById('pass-turn-btn').classList.remove('hidden');
+            document.getElementById('show-key-btn').classList.remove('hidden');
         }
 
 
@@ -284,6 +439,7 @@
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'card bg-gray-200 text-gray-900 flex items-center justify-center p-1 sm:p-2 rounded-lg shadow-xl cursor-pointer hover:shadow-2xl transition duration-150 transform hover:scale-[1.01] aspect-square';
                 cardDiv.setAttribute('data-index', index);
+                cardDiv.setAttribute('data-id', card.id);
 
                 const textSpan = document.createElement('span');
                 textSpan.className = 'card-text font-bold uppercase text-center';
@@ -308,23 +464,40 @@
         }
 
         /**
-         * Verifica las condiciones de victoria o derrota. Si el juego termina, muestra los botones de inicio.
+         * Verifica las condiciones de victoria o derrota por conteo o por Asesino.
+         * Establece juegoTerminado en true si se cumplen las condiciones.
          */
         function verificarFinJuego() {
+            let victoria = false;
+            let mensaje = '';
+
+            // 1. Verificar victoria por conteo de agentes
+            if (agentesAzulesRestantes === 0) {
+                victoria = true;
+                mensaje = '¡<span class="text-blue-400 font-bold">VICTORIA AZUL</span>! 🏆';
+            } else if (agentesRojosRestantes === 0) {
+                victoria = true;
+                mensaje = '¡<span class="text-red-400 font-bold">VICTORIA ROJA</span>! 🏆';
+            }
+
+            // 2. Verificar derrota por Asesino (solo si no hay victoria por conteo)
+            const asesinoRevelado = tableroLogico.some(card => card.type === TIPOS_CARTA.ASESINO && card.revealed);
+
+            if (asesinoRevelado && !victoria) {
+                juegoTerminado = true;
+                const equipoGanador = (turnoActual === TIPOS_CARTA.AZUL) ? 'Rojo 🔴' : 'Azul 🔵';
+                mensaje = `¡JUEGO TERMINADO! <span class="text-red-500 font-bold">ASASINADO</span>. Gana: ${equipoGanador}`;
+            } else if (victoria) {
+                juegoTerminado = true;
+            }
+
+
+            // 3. Si el juego ha terminado, actualizar la UI
             if (juegoTerminado) {
-                // CORRECCIÓN CLAVE: Deshabilitar el botón de pasar turno cuando el juego termina.
                 document.getElementById('pass-turn-btn').disabled = true;
 
-                let mensaje;
-                if (agentesAzulesRestantes === 0) {
-                    mensaje = '¡<span class="text-blue-400 font-bold">VICTORIA AZUL</span>! 🏆';
-                } else if (agentesRojosRestantes === 0) {
-                    mensaje = '¡<span class="text-red-400 font-bold">VICTORIA ROJA</span>! 🏆';
-                } else {
-                    // El juego terminó por el asesino.
-                    const equipoGanador = (turnoActual === TIPOS_CARTA.AZUL) ? 'Rojo 🔴' : 'Azul 🔵';
-                    mensaje = `¡JUEGO TERMINADO! <span class="text-red-500 font-bold">ASASINADO</span>. Gana: ${equipoGanador}`;
-                }
+                // Si el juego terminó por asesino, el mensaje ya está establecido.
+                // Si terminó por victoria normal, el mensaje se establece arriba.
                 document.getElementById('current-turn').innerHTML = mensaje;
 
                 // Mostrar los botones de inicio después de que el juego termine
