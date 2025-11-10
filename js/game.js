@@ -150,19 +150,15 @@ export function handleCardClick(event) {
     let finDeTurno = false;
     const equipoActual = turnoActual;
 
-    switch (cardData.type) {
-        case TIPOS_CARTA.ROJO:
-            if (equipoActual === TIPOS_CARTA.AZUL) finDeTurno = true;
-            break;
-        case TIPOS_CARTA.AZUL:
-            if (equipoActual === TIPOS_CARTA.ROJO) finDeTurno = true;
-            break;
-        case TIPOS_CARTA.NEUTRAL:
-            finDeTurno = true;
-            break;
-        case TIPOS_CARTA.ASESINO:
-            juegoTerminado = true;
-            break;
+    // 1. Si se revela el Asesino, el juego termina.
+    // 2. Si la tarjeta NO es del color del equipo actual (es de otro equipo o Neutral),
+    //    el turno termina.
+    // 3. Si la tarjeta ES del color del equipo actual, finDeTurno sigue siendo false 
+    //    y el turno continúa.
+    if (cardData.type === TIPOS_CARTA.ASESINO) {
+        juegoTerminado = true;
+    } else if (cardData.type !== equipoActual) {
+        finDeTurno = true;
     }
 
     recalcularEstado(tableroLogico);
