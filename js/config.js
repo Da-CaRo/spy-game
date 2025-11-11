@@ -4,6 +4,7 @@ export const ENCRYPTION_KEY = "AGENT33";
 // Constantes de almacenamiento local
 export const USADAS_STORAGE_KEY = 'juegoDeEspias_palabrasUsadas';
 export const GAME_STATE_STORAGE_KEY = 'juegoDeEspias_estadoActual';
+export const RULE_TURN_PASS_KEY = 'juegoDeEspias_reglaPaseTurno';
 
 // Mapeo de tipos de cartas y códigos de codificación
 export const TIPOS_CARTA = {

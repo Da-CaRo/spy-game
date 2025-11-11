@@ -11,6 +11,7 @@ let agentesAzulesRestantes = 0;
 let agentesVerdesRestantes = 0;
 let turnoActual = TIPOS_CARTA.AZUL;
 let numeroDeEquipos = 2;
+let paseTurnoAlFallar = true;
 const PALABRAS_MAPA = new Map(PALABRAS_SECRETAS.map(p => [p.id, p.palabra]));
 
 // =========================================================
@@ -62,7 +63,8 @@ function obtenerEstadoParaGuardar() {
         })),
         turno: turnoActual,
         terminado: juegoTerminado,
-        numTeams: numeroDeEquipos
+        numTeams: numeroDeEquipos,
+        turnPassRule: paseTurnoAlFallar
     };
 }
 
@@ -73,11 +75,12 @@ function obtenerEstadoParaGuardar() {
 /**
  * Función que encapsula toda la lógica para empezar una partida nueva.
  */
-export function startNewGame(startingTeam, numTeams) {
+export function startNewGame(startingTeam, numTeams, rulePassOnMiss) {
 
     juegoTerminado = false;
     turnoActual = startingTeam;
     numeroDeEquipos = numTeams;
+    paseTurnoAlFallar = rulePassOnMiss;
 
     const equipos = [TIPOS_CARTA.AZUL, TIPOS_CARTA.ROJO];
     if (numTeams === 3) equipos.push(TIPOS_CARTA.VERDE);
@@ -152,13 +155,19 @@ export function handleCardClick(event) {
 
     // 1. Si se revela el Asesino, el juego termina.
     // 2. Si la tarjeta NO es del color del equipo actual (es de otro equipo o Neutral),
-    //    el turno termina.
+    //    comprueba la regla de pasar el turno al fallar.
     // 3. Si la tarjeta ES del color del equipo actual, finDeTurno sigue siendo false 
     //    y el turno continúa.
     if (cardData.type === TIPOS_CARTA.ASESINO) {
         juegoTerminado = true;
     } else if (cardData.type !== equipoActual) {
-        finDeTurno = true;
+        if (paseTurnoAlFallar) {
+            // Si la regla indica que el turno debe pasar al fallar, se pasa el turno
+            finDeTurno = true;
+        } else {
+            // Si la regla indica que NO pasa el turno, finDeTurno sigue siendo false, 
+            // simplemente termina la acción sin pasar el turno, esperando la siguiente acción.
+        }
     }
 
     recalcularEstado(tableroLogico);
@@ -262,6 +271,7 @@ export function initGame() {
         turnoActual = estadoGuardado.turno || TIPOS_CARTA.AZUL;
         juegoTerminado = estadoGuardado.terminado || false;
         numeroDeEquipos = estadoGuardado.numTeams || 2;
+        paseTurnoAlFallar = estadoGuardado.turnPassRule !== undefined ? estadoGuardado.turnPassRule : true;
 
         UI.ocultarBotonesInicio();
         recalcularEstado(tableroLogico);
@@ -334,6 +344,7 @@ export function mostrarClaveSecretaURL(cadenaCifrada) {
         });
 
         numeroDeEquipos = tableroLogico.some(card => card.type === TIPOS_CARTA.VERDE) ? 3 : 2;
+        paseTurnoAlFallar = estadoPartida.turnPassRule !== undefined ? estadoPartida.turnPassRule : true;
 
         UI.ocultarBotonesInicio();
         UI.actualizarUIModoLider(tableroLogico);

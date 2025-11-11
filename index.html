@@ -96,6 +96,18 @@
 
         <div id="start-buttons" class="flex flex-col space-y-4 items-center mb-8 hidden">
 
+            <div class="text-lg font-bold text-gray-700 pt-2 pb-4">REGLAS DEL JUEGO</div>
+            <div id="turn-pass-rule" class="flex justify-center space-x-4 mb-4 text-center">
+                <button id="rule-pass-on-miss"
+                    class="bg-blue-500 text-white font-bold py-2 px-4 rounded transition duration-150">
+                    Fallo = Pasa Turno (Estándar)
+                </button>
+                <button id="rule-no-pass-on-miss"
+                    class="bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-150">
+                    Fallo = NO Pasa Turno (Hardcore)
+                </button>
+            </div>
+
             <div class="text-lg font-bold text-gray-700">MODO 2 EQUIPOS (9/8/7/1)</div>
             <div class="flex space-x-2">
                 <button id="start-blue-btn-2"
@@ -145,6 +157,33 @@
         import { TIPOS_CARTA } from './js/config.js';
         import * as Game from './js/game.js';
         import { mostrarClaveEnAlerta } from './js/ui.js';
+        import { RULE_TURN_PASS_KEY } from './js/config.js';
+
+        // --- ESTADO LOCAL DE REGLAS ---
+        // true = El turno pasa al fallar (comportamiento estándar)
+        // false = El turno NO pasa al fallar (comportamiento hardcore)
+        let paseTurnoAlFallar = true;
+
+        /**
+         * Actualiza el estado visual de los botones de regla según la opción seleccionada.
+         * @param {boolean} sePasaTurno - Indica si el turno pasa al fallar.
+         */
+        function actualizarBotonRegla(sePasaTurno) {
+            const btnPass = document.getElementById('rule-pass-on-miss');
+            const btnNoPass = document.getElementById('rule-no-pass-on-miss');
+
+            if (sePasaTurno) {
+                btnPass.classList.remove('bg-gray-400', 'text-gray-800');
+                btnPass.classList.add('bg-blue-500', 'text-white');
+                btnNoPass.classList.remove('bg-blue-500', 'text-white');
+                btnNoPass.classList.add('bg-gray-400', 'text-gray-800');
+            } else {
+                btnPass.classList.remove('bg-blue-500', 'text-white');
+                btnPass.classList.add('bg-gray-400', 'text-gray-800');
+                btnNoPass.classList.remove('bg-gray-400', 'text-gray-800');
+                btnNoPass.classList.add('bg-blue-500', 'text-white');
+            }
+        }
 
         /**
          * Intenta obtener el estado codificado del tablero desde el parámetro 'clave' de la URL.
@@ -174,34 +213,54 @@
                 document.getElementById('start-buttons').classList.remove('hidden');
             }
 
+            // 3. Cargar y configurar la regla
+            const storedRule = localStorage.getItem(RULE_TURN_PASS_KEY);
+            if (storedRule !== null) {
+                paseTurnoAlFallar = (storedRule === 'true');
+            }
+            actualizarBotonRegla(paseTurnoAlFallar);
+
+            // --- Manejadores de botones de reglas ---
+            document.getElementById('rule-pass-on-miss').addEventListener('click', () => {
+                paseTurnoAlFallar = true;
+                localStorage.setItem(RULE_TURN_PASS_KEY, 'true');
+                actualizarBotonRegla(paseTurnoAlFallar);
+            });
+
+            document.getElementById('rule-no-pass-on-miss').addEventListener('click', () => {
+                paseTurnoAlFallar = false;
+                localStorage.setItem(RULE_TURN_PASS_KEY, 'false');
+                actualizarBotonRegla(paseTurnoAlFallar);
+            });
+
             // --- Manejadores de eventos ---
 
             // Iniciar juego en MODO 2 EQUIPOS
             document.getElementById('start-blue-btn-2').addEventListener('click', () => {
-                Game.startNewGame(TIPOS_CARTA.AZUL, 2); // 2 Equipos
+                Game.startNewGame(TIPOS_CARTA.AZUL, 2, paseTurnoAlFallar); // 2 Equipos
             });
             document.getElementById('start-red-btn-2').addEventListener('click', () => {
-                Game.startNewGame(TIPOS_CARTA.ROJO, 2); // 2 Equipos
+                Game.startNewGame(TIPOS_CARTA.ROJO, 2, paseTurnoAlFallar); // 2 Equipos
             });
             document.getElementById('start-random-btn-2').addEventListener('click', () => {
                 const randomTeam = Math.random() < 0.5 ? TIPOS_CARTA.AZUL : TIPOS_CARTA.ROJO;
-                Game.startNewGame(randomTeam, 2); // 2 Equipos
+                Game.startNewGame(randomTeam, 2, paseTurnoAlFallar); // 2 Equipos
             });
 
             // NUEVOS: Iniciar juego en MODO 3 EQUIPOS
             document.getElementById('start-blue-btn-3').addEventListener('click', () => {
-                Game.startNewGame(TIPOS_CARTA.AZUL, 3); // 3 Equipos
+                Game.startNewGame(TIPOS_CARTA.AZUL, 3, paseTurnoAlFallar); // 3 Equipos
             });
             document.getElementById('start-red-btn-3').addEventListener('click', () => {
-                Game.startNewGame(TIPOS_CARTA.ROJO, 3); // 3 Equipos
+                Game.startNewGame(TIPOS_CARTA.ROJO, 3, paseTurnoAlFallar); // 3 Equipos
             });
             document.getElementById('start-green-btn-3').addEventListener('click', () => {
-                Game.startNewGame(TIPOS_CARTA.VERDE, 3); // 3 Equipos
+                Game.startNewGame(TIPOS_CARTA.VERDE, 3, paseTurnoAlFallar); // 3 Equipos
             });
             document.getElementById('start-random-btn-3').addEventListener('click', () => {
                 const teams = [TIPOS_CARTA.AZUL, TIPOS_CARTA.ROJO, TIPOS_CARTA.VERDE];
                 const randomTeam = teams[Math.floor(Math.random() * teams.length)];
-                Game.startNewGame(randomTeam, 3); // 3 Equipos
+                Game.startNewGame(randomTeam, 3, paseTurnoAlFallar); // 3 Equipos
             });
 
             // Controles de juego
