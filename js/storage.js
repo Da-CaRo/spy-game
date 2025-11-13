@@ -1,4 +1,4 @@
-import { ENCRYPTION_KEY, GAME_STATE_STORAGE_KEY, USADAS_STORAGE_KEY } from './config.js';
+import { ENCRYPTION_KEY, GAME_STATE_STORAGE_KEY, USADAS_STORAGE_KEY, RULE_TURN_PASS_KEY } from './config.js';
 
 // =========================================================
 // Funciones de Cifrado XOR
@@ -127,4 +127,18 @@ export function guardarNuevosIds(nuevosIds) {
     nuevosItems.forEach(item => mapaIds.set(item.id, item));
 
     localStorage.setItem(USADAS_STORAGE_KEY, JSON.stringify(Array.from(mapaIds.values())));
+}
+
+// =========================================================
+// Funciones de Limpieza
+// =========================================================
+
+/**
+ * Elimina todas las variables de estado del juego y palabras usadas del almacenamiento local.
+ */
+export function limpiarTodasVariables() {
+    localStorage.removeItem(GAME_STATE_STORAGE_KEY);
+    localStorage.removeItem(USADAS_STORAGE_KEY);
+    localStorage.removeItem(RULE_TURN_PASS_KEY);
+    console.log("✅ Todas las variables de juego han sido borradas");
 }

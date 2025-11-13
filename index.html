@@ -4,211 +4,344 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juego de Espías - Tablero Digital</title>
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    <title>Agente 33</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/qrious@4.0.2/dist/qrious.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@100..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300..700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&display=swap" rel="stylesheet">
+
+
     <style>
-        /* Estilos personalizados para la tipografía del juego */
-        .card-text {
-            font-size: clamp(0.75rem, 3vw, 1.5rem);
-            /* Tamaño responsivo del texto */
-            line-height: 1.2;
+        /* 1. DEFINICIÓN DE VARIABLES DE COLOR */
+        :root {
+            --color-acento: #eab308;
+            --color-fondo: #111827;
+            --color-tarjeta: #1F2937;
+
+            --color-texto-claro: #F3F4F6;
+            --color-texto-gris: #9CA3AF;
+            --color-borde: #374151;
+        }
+
+        /* 2. APLICACIÓN DE VARIABLES A LOS ESTILOS GLOBALMENTE */
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            background-color: var(--color-fondo);
+            color: var(--color-texto-claro);
+        }
+
+        /* Para usar una fuente monoespaciada en títulos específicos */
+        .font-code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        /* Para usar una fuente del agente en títulos específicos */
+        .font-agente {
+            /*
+            font-family: 'Orbitron', sans-serif;
+            font-family: 'Rajdhani', sans-serif;
+            font-family: 'Antonio', sans-serif;
+            font-family: 'Cinzel', serif;
+            */
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Sobrescribir las clases de Tailwind con las variables (para el color de acento) */
+        .text-acento {
+            color: var(--color-acento);
+        }
+
+        .text-skip {
+            color: var(--color-tarjeta);
+        }
+
+        .hover-acento:hover {
+            color: var(--color-acento) !important;
+        }
+
+        .border-acento:hover {
+            border-color: var(--color-acento) !important;
+        }
+
+        .bg-tarjeta {
+            background-color: var(--color-tarjeta);
+        }
+
+        .border-tarjeta {
+            border-color: var(--color-borde);
+        }
+
+        /* Ajuste específico para el texto gris de las tarjetas */
+        .text-texto-gris {
+            color: var(--color-texto-gris);
         }
 
         /* Colores de revelación */
+        /* Rojo-600 */
         .bg-red-agent {
             background-color: #dc2626;
             color: white;
         }
 
-        /* Rojo-600 */
+        /* Azul-600 */
         .bg-blue-agent {
             background-color: #2563eb;
             color: white;
         }
 
-        /* NUEVO: Verde-600 */
+        /* Verde-600 */
         .bg-green-agent {
             background-color: #059669;
             color: white;
         }
 
-        /* Azul-600 */
+        /* Ámbar-500 */
         .bg-neutral-agent {
             background-color: #f59e0b;
             color: white;
         }
 
-        /* Ámbar-500 */
+        /* Gris-800 */
         .bg-assassin {
             background-color: #1f2937;
             color: white;
         }
-
-        /* Gris-800 */
     </style>
 </head>
 
-<body class="bg-gray-900 text-white p-4 sm:p-8 min-h-screen flex flex-col items-center">
-
-    <header class="w-full max-w-6xl mb-4 text-center">
-        <h1 class="text-4xl sm:text-5xl font-extrabold text-yellow-400 tracking-wider uppercase">
-            Juego de Espías
-        </h1>
+<body class="min-h-screen antialiased">
+    <header class="bg-gray-900 shadow-md p-4 border-b border-gray-800 top-0">
+        <div class="max-w-7xl mx-auto flex justify-between items-center py-0 relative">
+            <div class="flex items-center space-x-2">
+                <img src="img/favicon.png" alt="Icono Agente 33" class="h-8 w-8">
+                <h1 class="text-3xl font-extrabold text-acento font-agente">
+                    Agente 33
+                </h1>
+            </div>
+            <div id="current-turn"
+                class="bg-tarjeta p-2 rounded-lg text-acento whitespace-nowrap text-lg font-bold absolute top-1/2 -translate-y-1/2 right-4">
+                Esperando inicio...
+            </div>
+        </div>
     </header>
 
-    <main class="w-full max-w-6xl">
+    <div id="start-buttons">
+        <div class="py-8 md:py-12">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 
-        <div class="flex flex-col sm:flex-row justify-between items-center w-full mb-6">
-            <div id="scoreboard" class="flex justify-between items-center w-full sm:w-auto text-xl sm:text-2xl font-semibold mb-4 sm:mb-0 space-x-4">
-                <div id="blue-score" class="text-blue-400 bg-blue-900/50 p-2 rounded-lg whitespace-nowrap">
-                    🔵 Azules: <span class="font-bold text-3xl">-</span>
-                </div>
-                <div id="red-score" class="text-red-400 bg-red-900/50 p-2 rounded-lg whitespace-nowrap">
-                    🔴 Rojos: <span class="font-bold text-3xl">-</span>
-                </div>
-                <div id="green-score" class="text-green-400 bg-green-900/50 p-2 rounded-lg whitespace-nowrap">
-                    🟢 Verdes: <span class="font-bold text-3xl">-</span>
-                </div>
-                <div id="current-turn" class="bg-gray-700 p-2 rounded-lg text-yellow-300 whitespace-nowrap">
-                    Esperando inicio...
-                </div>
+                <h1 class="text-5xl md:text-6xl font-extrabold mb-4 leading-tight">
+                    Bienvenido a <span class="font-agente text-acento">
+                        Agente 33
+                    </span>
+                </h1>
+
+                <p class="text-xl text-texto-gris mb-12 max-w-2xl mx-auto">
+                    Selecciona el modo de juego y el equipo inicial para empezar una nueva partida.
+                </p>
             </div>
-            <div id="game-controls" class="flex space-x-4 w-full sm:w-auto justify-end">
-                <button id="share-key-btn"
-                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-full transition duration-150 text-xl w-full sm:w-auto shadow-lg hover:shadow-xl disabled:opacity-50 hidden">
-                    🔗 Generar Enlace Clave
-                </button>
-                <button id="reset-game-btn"
-                    class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-full transition duration-150 text-xl w-full sm:w-auto shadow-lg hover:shadow-xl disabled:opacity-50 hidden">
-                    🗑️ Reiniciar Partida
-                </button>
-                <button id="show-key-btn"
-                    class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-full transition duration-150 text-xl w-full sm:w-auto shadow-lg hover:shadow-xl disabled:opacity-50 hidden">
-                    👁️ Ver Clave Secreta
-                </button>
-                <button id="pass-turn-btn"
-                    class="bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 px-6 rounded-full transition duration-150 text-xl w-full sm:w-auto shadow-lg hover:shadow-xl disabled:opacity-50 hidden">
-                    Pasar Turno
-                </button>
+
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div
+                        class="bg-tarjeta p-6 rounded-lg shadow-xl border border-gray-700 border-acento hover-acento transition duration-300 h-full flex flex-col justify-between">
+                        <div>
+                            <span class="text-acento text-4xl mb-3 block">⚙️</span>
+                            <h3 class="text-2xl font-bold mb-2 text-gray-100 font-code">Configuración</h3>
+                            <p class="text-texto-gris text-base">
+                            <div id="turn-pass-rule" class="flex justify-center space-x-4 mb-4 text-center">
+                                <button id="rule-pass-on-miss"
+                                    class="font-bold py-2 px-4 rounded transition duration-150">
+                                    Fallo = Pasa Turno (Estándar)
+                                </button>
+                                <button id="rule-no-pass-on-miss"
+                                    class="font-bold py-2 px-4 rounded transition duration-150">
+                                    Fallo = NO Pasa Turno (Hardcore)
+                                </button>
+                            </div>
+
+                            </p>
+                        </div>
+                        <a href="https://da-caro.github.io/game-guides/agente-33.html" target="_blank" class="block">
+                            <span class="mt-5 inline-block text-sm font-medium text-acento hover:underline">Ver
+                                Instrucciones →</span></a>
+                    </div>
+
+                    <div
+                        class="bg-tarjeta p-6 rounded-lg shadow-xl border border-gray-700 border-acento hover-acento transition duration-300 h-full flex flex-col justify-between">
+                        <div>
+                            <span class="text-acento text-4xl mb-3 block">2 Equipos</span>
+                            <h3 class="text-2xl font-bold mb-2 text-gray-100 font-code">(9/8/7/1)</h3>
+                            <p class="text-texto-gris text-base">
+                            <div class="flex flex-col space-y-2">
+                                <button id="start-random-btn-2"
+                                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+                                    Empieza Aleatorio 🎲
+                                </button>
+                                <button id="start-blue-btn-2"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+                                    Empieza Azul 🔵
+                                </button>
+                                <button id="start-red-btn-2"
+                                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+                                    Empieza Rojo 🔴
+                                </button>
+                            </div>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="bg-tarjeta p-6 rounded-lg shadow-xl border border-gray-700 border-acento hover-acento transition duration-300 h-full flex flex-col justify-between">
+                        <div>
+                            <span class="text-acento text-4xl mb-3 block">3 Equipos</span>
+                            <h3 class="text-2xl font-bold mb-2 text-gray-100 font-code">(8/8/8/1)</h3>
+                            <p class="text-texto-gris text-base">
+                            <div class="flex flex-col space-y-2 justify-center">
+                                <button id="start-random-btn-3"
+                                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+                                    Empieza Aleatorio 🎲
+                                </button>
+                                <button id="start-blue-btn-3"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+                                    Empieza Azul 🔵
+                                </button>
+                                <button id="start-red-btn-3"
+                                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+                                    Empieza Rojo 🔴
+                                </button>
+                                <button id="start-green-btn-3"
+                                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-150">
+                                    Empieza Verde 🟢
+                                </button>
+                            </div>
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
+    <main class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
 
-        <div id="start-buttons" class="flex flex-col space-y-4 items-center mb-8 hidden">
+        <div id="game-layout" class="flex flex-col lg:flex-row lg:space-x-8 hidden">
 
-            <div class="text-lg font-bold text-gray-700 pt-2 pb-4">REGLAS DEL JUEGO</div>
-            <div id="turn-pass-rule" class="flex justify-center space-x-4 mb-4 text-center">
-                <button id="rule-pass-on-miss"
-                    class="bg-blue-500 text-white font-bold py-2 px-4 rounded transition duration-150">
-                    Fallo = Pasa Turno (Estándar)
-                </button>
-                <button id="rule-no-pass-on-miss"
-                    class="bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded transition duration-150">
-                    Fallo = NO Pasa Turno (Hardcore)
-                </button>
+            <div id="control-bar-wrapper"
+                class="flex flex-col sm:flex-row lg:flex-col justify-between items-center w-full lg:w-64 mb-6 lg:mb-0">
+
+                <div id="game-stats"
+                    class="flex justify-between items-center w-full sm:w-auto lg:w-full text-xl sm:text-2xl font-semibold mb-4 sm:mb-0 lg:mb-4 space-x-4 lg:space-x-0 lg:flex-col lg:space-y-4 hidden">
+                    <div id="blue-score"
+                        class="w-24 h-24 flex flex-col justify-center items-center text-blue-400 border-2 border-blue-600 p-1 rounded-lg bg-tarjeta text-sm">
+                        🔵 Azules
+                        <span class="font-bold text-3xl">-</span>
+                    </div>
+                    <div id="red-score"
+                        class="w-24 h-24 flex flex-col justify-center items-center text-red-400 border-2 border-red-600 p-1 rounded-lg bg-tarjeta text-sm">
+                        🔴 Rojos
+                        <span class="font-bold text-3xl">-</span>
+                    </div>
+                    <div id="green-score"
+                        class="w-24 h-24 flex flex-col justify-center items-center text-green-400 border-2 border-green-600 p-1 rounded-lg bg-tarjeta hidden text-sm">
+                        🟢 Verdes
+                        <span class="font-bold text-3xl">-</span>
+                    </div>
+                </div>
+
+                <div id="game-controls"
+                    class="flex space-x-2 w-full sm:w-auto lg:w-full lg:justify-start lg:space-x-0 lg:flex-col lg:space-y-2 mt-4 sm:mt-0 lg:mt-0">
+
+                    <div class="flex space-x-2 w-full">
+                        <button id="share-key-btn"
+                            class="flex-1 py-3 px-2 bg-gray-700 hover:bg-gray-600 text-blue-400 font-bold rounded-full transition duration-150 flex items-center justify-center text-sm disabled:opacity-50 hidden"
+                            title="Generar Enlace Clave">
+                            🫆 Clave
+                        </button>
+                        <button id="show-key-btn"
+                            class="flex-1 py-3 px-2 bg-gray-700 hover:bg-gray-600 text-purple-400 font-bold rounded-full transition duration-150 flex items-center justify-center text-sm disabled:opacity-50 hidden"
+                            title="Ver Clave Secreta">
+                            👁️ Clave
+                        </button>
+                        <button id="reset-game-btn"
+                            class="flex-1 py-3 px-2 bg-gray-700 hover:bg-gray-600 text-red-400 font-bold rounded-full transition duration-150 flex items-center justify-center text-sm disabled:opacity-50 hidden"
+                            title="Acabar Partida">
+                            🛑 Salir
+                        </button>
+                    </div>
+
+                    <button id="pass-turn-btn"
+                        class="bg-yellow-500 hover:bg-yellow-4  00 text-skip font-bold py-3 px-4 rounded-full transition duration-150 text-lg shadow-lg disabled:opacity-50 hidden w-full">
+                        Pasar Turno
+                    </button>
+                </div>
+            </div>
+            <div id="game-board" class="grid grid-cols-5 gap-3 sm:gap-4 md:gap-5 w-full lg:flex-1 aspect-[16/9] ">
             </div>
 
-            <div class="text-lg font-bold text-gray-700">MODO 2 EQUIPOS (9/8/7/1)</div>
-            <div class="flex space-x-2">
-                <button id="start-blue-btn-2"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150">
-                    Empieza Azul 🔵
-                </button>
-                <button id="start-red-btn-2"
-                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150">
-                    Empieza Rojo 🔴
-                </button>
-                <button id="start-random-btn-2"
-                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-150">
-                    Empieza Aleatorio 🎲
-                </button>
-            </div>
-
-            <div class="text-lg font-bold text-gray-700 pt-4 border-t border-gray-300 w-full text-center">MODO 3 EQUIPOS
-                (8/8/8/1)</div>
-            <div class="flex space-x-2 flex-wrap justify-center">
-                <button id="start-blue-btn-3"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150 mb-2">
-                    Empieza Azul 🔵
-                </button>
-                <button id="start-red-btn-3"
-                    class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-150 mb-2">
-                    Empieza Rojo 🔴
-                </button>
-                <button id="start-green-btn-3"
-                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-150 mb-2">
-                    Empieza Verde 🟢
-                </button>
-                <button id="start-random-btn-3"
-                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-150 mb-2">
-                    Empieza Aleatorio 🎲
-                </button>
-            </div>
-
-
-        </div>
-        <div id="game-board" class="grid grid-cols-5 gap-3 sm:gap-4 md:gap-5 w-full aspect-square">
         </div>
     </main>
 
+    <footer class="bg-gray-900 border-t border-gray-800 mt-16 py-4">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center text-center md:text-left">
+
+                <p class="text-xs text-texto-gris mb-4 md:mb-0">
+                    &copy; <span id="currentYearFooter"></span> <span class="font-code">
+                        <span class="-mr-1 inline-block">Da_CaRo</span> Labs
+                    </span> Desarrollado con pasión.
+                </p>
+
+                <div class="flex space-x-6 items-center">
+                    <a href="https://github.com/da-caro" target="_blank"
+                        class="text-texto-gris hover-acento transition duration-300 text-sm">
+                        GitHub
+                    </a>
+                    <button id="clear-storage-btn" class="text-texto-gris hover-acento transition duration-300 text-sm">
+                        Borrar Variables
+                    </button>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script type="module">
+        document.getElementById('currentYearFooter').textContent = new Date().getFullYear();
+
         // Importar las funciones y el motor del juego
         import { TIPOS_CARTA } from './js/config.js';
         import * as Game from './js/game.js';
-        import { mostrarClaveEnAlerta } from './js/ui.js';
+        import * as UI from './js/ui.js';
         import { RULE_TURN_PASS_KEY } from './js/config.js';
+        import * as Storage from './js/storage.js'
 
         // --- ESTADO LOCAL DE REGLAS ---
-        // true = El turno pasa al fallar (comportamiento estándar)
-        // false = El turno NO pasa al fallar (comportamiento hardcore)
         let paseTurnoAlFallar = true;
-
-        /**
-         * Actualiza el estado visual de los botones de regla según la opción seleccionada.
-         * @param {boolean} sePasaTurno - Indica si el turno pasa al fallar.
-         */
-        function actualizarBotonRegla(sePasaTurno) {
-            const btnPass = document.getElementById('rule-pass-on-miss');
-            const btnNoPass = document.getElementById('rule-no-pass-on-miss');
-
-            if (sePasaTurno) {
-                btnPass.classList.remove('bg-gray-400', 'text-gray-800');
-                btnPass.classList.add('bg-blue-500', 'text-white');
-                btnNoPass.classList.remove('bg-blue-500', 'text-white');
-                btnNoPass.classList.add('bg-gray-400', 'text-gray-800');
-            } else {
-                btnPass.classList.remove('bg-blue-500', 'text-white');
-                btnPass.classList.add('bg-gray-400', 'text-gray-800');
-                btnNoPass.classList.remove('bg-gray-400', 'text-gray-800');
-                btnNoPass.classList.add('bg-blue-500', 'text-white');
-            }
-        }
-
-        /**
-         * Intenta obtener el estado codificado del tablero desde el parámetro 'clave' de la URL.
-         * @returns {string | null} La cadena codificada o null.
-                */
-        function obtenerEstadoCodificadoURL() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('clave'); // Busca el parámetro ?clave=...
-        }
 
         // =========================================================
         // INICIO: DOMContentLoaded
         // =========================================================
         document.addEventListener('DOMContentLoaded', () => {
-            const claveUrl = obtenerEstadoCodificadoURL();
+            const claveUrl = Game.obtenerEstadoCodificadoURL();
 
             // 1. VERIFICAR SI HAY UNA CLAVE EN LA URL (LÍDER DE ESPÍAS)
             if (claveUrl) {
                 // Si hay clave en la URL, cargar el estado decodificado y mostrar el tablero de clave.
+                UI.mostrarEstadisticas();
+                UI.mostrarTablero();
                 Game.mostrarClaveSecretaURL(claveUrl);
                 return;
             }
 
             // 2. Intentar cargar la partida guardada
-            if (!Game.initGame()) {
+            if (Game.initGame()) {
+                // Si la carga fue exitosa, mostrar las estadísticas
+                UI.mostrarEstadisticas();
+                UI.mostrarTablero();
+            } else {
                 // Si no hay partida guardada o la carga falló, mostrar el estado inicial.
                 document.getElementById('start-buttons').classList.remove('hidden');
             }
@@ -218,46 +351,60 @@
             if (storedRule !== null) {
                 paseTurnoAlFallar = (storedRule === 'true');
             }
-            actualizarBotonRegla(paseTurnoAlFallar);
+            UI.actualizarBotonRegla(paseTurnoAlFallar);
 
             // --- Manejadores de botones de reglas ---
             document.getElementById('rule-pass-on-miss').addEventListener('click', () => {
                 paseTurnoAlFallar = true;
                 localStorage.setItem(RULE_TURN_PASS_KEY, 'true');
-                actualizarBotonRegla(paseTurnoAlFallar);
+                UI.actualizarBotonRegla(paseTurnoAlFallar);
             });
 
             document.getElementById('rule-no-pass-on-miss').addEventListener('click', () => {
                 paseTurnoAlFallar = false;
                 localStorage.setItem(RULE_TURN_PASS_KEY, 'false');
-                actualizarBotonRegla(paseTurnoAlFallar);
+                UI.actualizarBotonRegla(paseTurnoAlFallar);
             });
 
             // --- Manejadores de eventos ---
 
             // Iniciar juego en MODO 2 EQUIPOS
             document.getElementById('start-blue-btn-2').addEventListener('click', () => {
+                UI.mostrarEstadisticas();
+                UI.mostrarTablero();
                 Game.startNewGame(TIPOS_CARTA.AZUL, 2, paseTurnoAlFallar); // 2 Equipos
             });
             document.getElementById('start-red-btn-2').addEventListener('click', () => {
+                UI.mostrarEstadisticas();
+                UI.mostrarTablero();
                 Game.startNewGame(TIPOS_CARTA.ROJO, 2, paseTurnoAlFallar); // 2 Equipos
             });
             document.getElementById('start-random-btn-2').addEventListener('click', () => {
+                UI.mostrarEstadisticas();
+                UI.mostrarTablero();
                 const randomTeam = Math.random() < 0.5 ? TIPOS_CARTA.AZUL : TIPOS_CARTA.ROJO;
                 Game.startNewGame(randomTeam, 2, paseTurnoAlFallar); // 2 Equipos
             });
 
-            // NUEVOS: Iniciar juego en MODO 3 EQUIPOS
+            // Iniciar juego en MODO 3 EQUIPOS
             document.getElementById('start-blue-btn-3').addEventListener('click', () => {
+                UI.mostrarEstadisticas();
+                UI.mostrarTablero();
                 Game.startNewGame(TIPOS_CARTA.AZUL, 3, paseTurnoAlFallar); // 3 Equipos
             });
             document.getElementById('start-red-btn-3').addEventListener('click', () => {
+                UI.mostrarEstadisticas();
+                UI.mostrarTablero();
                 Game.startNewGame(TIPOS_CARTA.ROJO, 3, paseTurnoAlFallar); // 3 Equipos
             });
             document.getElementById('start-green-btn-3').addEventListener('click', () => {
+                UI.mostrarEstadisticas();
+                UI.mostrarTablero();
                 Game.startNewGame(TIPOS_CARTA.VERDE, 3, paseTurnoAlFallar); // 3 Equipos
             });
             document.getElementById('start-random-btn-3').addEventListener('click', () => {
+                UI.mostrarEstadisticas();
+                UI.mostrarTablero();
                 const teams = [TIPOS_CARTA.AZUL, TIPOS_CARTA.ROJO, TIPOS_CARTA.VERDE];
                 const randomTeam = teams[Math.floor(Math.random() * teams.length)];
                 Game.startNewGame(randomTeam, 3, paseTurnoAlFallar); // 3 Equipos
@@ -265,25 +412,47 @@
 
             // Controles de juego
             document.getElementById('pass-turn-btn').addEventListener('click', Game.passTurn);
-            document.getElementById('reset-game-btn').addEventListener('click', Game.reiniciarPartida);
+            document.getElementById('reset-game-btn').addEventListener('click', () => {
+                Game.reiniciarPartida();
+            });
             document.getElementById('share-key-btn').addEventListener('click', Game.generarEnlaceClave);
 
             // Ver clave secreta (usa el tablero lógico del motor del juego)
             document.getElementById('show-key-btn').addEventListener('click', () => {
-                mostrarClaveEnAlerta(Game.getTableroLogico());
+                // 1. Mostrar el diálogo de confirmación y capturar la respuesta
+                const confirmar = confirm("ADVERTENCIA: ¿Estás seguro de que quieres ver la clave secreta?\nSolo el Líder de Espías debe ver esta información. Si eres un Agente de Campo, ¡esto arruinará el juego!");
+
+                // 2. Solo procede si el usuario pulsa ACEPTAR (confirmar es true)
+                if (confirmar) {
+                    UI.mostrarClaveEnAlerta(Game.getTableroLogico());
+                }
+                // Si pulsa CANCELAR, no se hace nada.
+            });
+
+            // Borrar las variables almacenadas
+            document.getElementById('clear-storage-btn').addEventListener('click', () => {
+                const confirmClear = confirm("ADVERTENCIA: ¿Estás seguro de que quieres borrar el estado de la partida y las palabras usadas guardadas localmente?");
+                if (confirmClear) {
+                    Storage.limpiarTodasVariables(); // Llama a la nueva función de Storage
+                    // Retroalimentación al usuario y reinicio para cargar el estado limpio
+                    alert("¡Variables de juego borradas! La página se reiniciará para aplicar los cambios.");
+                    window.location.reload();
+                }
             });
         });
     </script>
-    </script>
+
     <div id="qr-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-50 p-4"
         onclick="this.classList.add('hidden')">
-        <div class="bg-white p-8 rounded-lg shadow-2xl max-w-sm w-full text-center" onclick="event.stopPropagation()">
-            <h3 class="text-2xl font-bold text-gray-900 mb-4">Escanea la Clave Secreta</h3>
-            <canvas id="qr-canvas" class="w-full h-auto mx-auto border-4 border-gray-200 rounded-lg"></canvas>
-            <p class="text-sm text-gray-500 mt-4">Haz clic fuera para cerrar.</p>
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl max-w-sm w-full text-center"
+            onclick="event.stopPropagation()">
+            <h3 id="qr-instructions" class="text-2xl font-bold text-acento mb-4">Escanea la Clave Secreta</h3>
+            <pre id="clave-code"
+                class="text-yellow-400 text-xl font-mono p-4 bg-gray-900 border border-gray-700 rounded-lg whitespace-pre text-center"></pre>
+            <canvas id="qr-canvas" class="w-full h-auto mx-auto border-4 border-gray-700 rounded-lg"></canvas>
+            <p class="text-sm text-gray-400 mt-4">Haz clic fuera para cerrar.</p>
         </div>
     </div>
-
 </body>
 
 </html>

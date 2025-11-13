@@ -237,7 +237,7 @@ function verificarFinJuego() {
             equipoGanadorTexto = `Los equipos restantes: ${equiposRestantes.join(' y ')}`;
         }
 
-        mensaje = `¡JUEGO TERMINADO! <span class="text-red-500 font-bold">ASASINADO</span>. Ganan: ${equipoGanadorTexto}`;
+        mensaje = `¡JUEGO TERMINADO! <span class="text-red-500 font-bold">ASESINADO</span>. Ganan: ${equipoGanadorTexto}`;
     } else if (mensaje) {
         juegoTerminado = true;
     }
@@ -290,6 +290,8 @@ export function reiniciarPartida() {
     if (confirm("¿Estás seguro de que quieres borrar la partida actual y volver a la pantalla de inicio?")) {
         Storage.limpiarEstadoPartida();
         UI.mostrarBotonesInicio();
+        UI.ocultarEstadisticas();
+        UI.ocultarTablero();
     }
 }
 
@@ -353,6 +355,15 @@ export function mostrarClaveSecretaURL(cadenaCifrada) {
         console.error("Error al procesar el JSON del tablero descifrado para la clave:", e);
         alert("Error interno al decodificar la clave.");
     }
+}
+
+/**
+ * Intenta obtener el estado codificado del tablero desde el parámetro 'clave' de la URL.
+ * @returns {string | null} La cadena codificada o null.
+        */
+export function obtenerEstadoCodificadoURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('clave'); // Busca el parámetro ?clave=...
 }
 
 // =========================================================
